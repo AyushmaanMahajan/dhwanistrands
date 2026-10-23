@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Boyfriend Plan</title>
+<meta name="theme-color" content="#ffd1e3">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💖</text></svg>">
+<style>
+:root{--ink:#6b2a4a;--soft:#a35a7e;--pink:#ff6fa5;--pink2:#ff9ec4;--glass:rgba(255,255,255,.45);--edge:rgba(255,255,255,.8)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;padding:16px;font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);
+background:radial-gradient(circle at 15% 20%,#ffd6e8 0,transparent 45%),radial-gradient(circle at 85% 80%,#ffe9a8 0,transparent 40%),radial-gradient(circle at 80% 10%,#d9e8ff 0,transparent 40%),#fff4f8}
+.card{width:100%;max-width:380px;padding:28px 24px;text-align:center;background:var(--glass);border:1px solid var(--edge);border-radius:28px;
+backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);box-shadow:0 10px 40px rgba(255,111,165,.25)}
+h1{margin:0 0 4px;font-size:26px}
+p{margin:6px 0 18px;color:var(--soft)}
+.price{display:inline-block;margin:0 0 18px;padding:6px 16px;border-radius:99px;background:var(--glass);border:1px solid var(--edge);font-weight:600}
+.btn{display:block;width:100%;padding:13px;margin-top:10px;border:1px solid var(--edge);border-radius:16px;font:600 16px system-ui,sans-serif;color:var(--ink);background:var(--glass);cursor:pointer;transition:transform .15s}
+.btn:active{transform:scale(.97)}
+.btn.main{color:#fff;border:0;background:linear-gradient(135deg,var(--pink),var(--pink2));box-shadow:0 6px 18px rgba(255,111,165,.45)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.drop{display:grid;place-items:center;height:170px;border:2px dashed var(--pink2);border-radius:20px;overflow:hidden;cursor:pointer;color:var(--soft);background:rgba(255,255,255,.35)}
+.drop img{width:100%;height:100%;object-fit:cover}
+.pic{width:130px;height:130px;margin:0 auto 14px;border-radius:50%;object-fit:cover;border:4px solid #fff;box-shadow:0 6px 20px rgba(255,111,165,.4)}
+.heart{font-size:42px}
+[hidden]{display:none!important}
+#ask{position:fixed;inset:0;display:grid;place-items:center;padding:16px;background:rgba(255,200,222,.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#ask .card{max-width:320px;backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(255,255,255,.75)}
+.row{display:flex;gap:10px}
+#yes{width:48%}
+#yes.run{position:fixed;margin:0;width:120px}
+</style>
+</head>
+<body>
+<main class="card">
+  <section id="out">
+    <div class="heart">💖</div>
+    <h1>Boyfriend Plan</h1>
+    <p>Hugs, attention &amp; terrible jokes. Cancel anytime*</p>
+    <div class="price">1 photo / forever</div>
+    <label class="drop" id="drop"><span id="hint">📸 Tap to add your payment photo</span><img id="prev" alt="" hidden><input id="file" type="file" accept="image/*" hidden></label>
+    <button class="btn main" id="sub" disabled>Subscribe 💘</button>
+  </section>
+  <section id="in" hidden>
+    <img class="pic" id="pic" alt="">
+    <h1>You're subscribed 💕</h1>
+    <p>Thank you, payment received. Enjoy your boyfriend.</p>
+    <button class="btn" id="unsub">Unsubscribe</button>
+  </section>
+</main>
+<div id="ask" hidden>
+  <div class="card">
+    <div class="heart">🥺</div>
+    <h1>Are you sure?</h1>
+    <p>Really want to leave me?</p>
+    <div class="row">
+      <button class="btn main" id="no">No, stay 💖</button>
+      <button class="btn" id="yes">Yes</button>
+    </div>
+  </div>
+</div>
+<script>
+const $=id=>document.getElementById(id),K='bf-plan';
+let photo='';
+const get=()=>{try{return localStorage.getItem(K)}catch(e){return null}};
+const set=v=>{try{v?localStorage.setItem(K,v):localStorage.removeItem(K)}catch(e){}};
+function render(){
+  const s=get()||(window._mem||'');
+  $('in').hidden=!s;$('out').hidden=!!s;
+  if(s)$('pic').src=s;
+}
+// downscale photo so it stays tiny
+$('file').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const img=new Image();
+  img.onload=()=>{
+    const r=Math.min(1,480/Math.max(img.width,img.height)),c=document.createElement('canvas');
+    c.width=img.width*r;c.height=img.height*r;
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    photo=c.toDataURL('image/jpeg',.7);
+    $('prev').src=photo;$('prev').hidden=false;$('hint').hidden=true;$('sub').disabled=false;
+    URL.revokeObjectURL(img.src);
+  };
+  img.src=URL.createObjectURL(f);
+};
+$('sub').onclick=()=>{if(!photo)return;window._mem=photo;set(photo);photo='';render()};
+$('unsub').onclick=()=>{$('ask').hidden=false;place(false)};
+$('no').onclick=()=>{$('ask').hidden=true};
+
+// "Yes" can never be reached: stays > 1 inch (96 CSS px) from the pointer
+const yes=$('yes'),INCH=96,SAFE=170;
+let mx=-999,my=-999;
+const dist=()=>{const b=yes.getBoundingClientRect();
+  const dx=Math.max(b.left-mx,0,mx-b.right),dy=Math.max(b.top-my,0,my-b.bottom);return Math.hypot(dx,dy)};
+function place(){
+  yes.classList.add('run');
+  const w=120,h=yes.offsetHeight||48,W=innerWidth-w-8,H=innerHeight-h-8;
+  let x,y,n=0;
+  do{x=8+Math.random()*Math.max(W,0);y=8+Math.random()*Math.max(H,0);n++}
+  while(n<40&&Math.hypot(Math.max(x-mx,0,mx-(x+w)),Math.max(y-my,0,my-(y+h)))<SAFE);
+  yes.style.left=x+'px';yes.style.top=y+'px';
+}
+function track(e){mx=e.clientX;my=e.clientY;if(!$('ask').hidden&&yes.classList.contains('run')&&dist()<SAFE-40)place()}
+addEventListener('pointermove',track);
+addEventListener('pointerdown',e=>{mx=e.clientX;my=e.clientY;if(!$('ask').hidden)place()},true);
+yes.addEventListener('pointerenter',place);
+yes.addEventListener('focus',()=>{yes.blur();place()});
+yes.addEventListener('click',e=>{e.preventDefault();place()}); // never succeeds
+new MutationObserver(()=>{if($('ask').hidden){yes.classList.remove('run');yes.style.left=yes.style.top=''}}).observe($('ask'),{attributes:true,attributeFilter:['hidden']});
+render();
+</script>
+</body>
+</html>
